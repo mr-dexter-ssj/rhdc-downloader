@@ -1,3 +1,5 @@
+import sys
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton
 from argparse import ArgumentParser
@@ -25,5 +27,5 @@ print(args.rom)
 
 download_and_patch(args.link, args.path, args.rom)
 
-exit(0)
+sys.exit(0)
 
