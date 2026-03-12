@@ -4,6 +4,8 @@ import requests
 import os
 import pypatchergba
 from pathlib import Path
+import zipfile as zf
+from patch_rom import patch_rom
 
 ##TODO:
 # Add checksum checks
@@ -42,14 +44,36 @@ def download_and_patch(link, path_folder, rom):
         print(e)
         sys.exit(1)
 
-    print("Patching file...")
-    bps_patch = open(path_folder + link.path, 'rb').read()
-
-    try:
-        patched_rom = pypatchergba.apply_patch(str(Path(rom).expanduser()), bps_patch)
-        open(path_folder + link.path[:-4] + ".z64", 'wb').write(patched_rom)
-    except Exception as e:
-        print("Error: " + str(e))
-        sys.exit(1)
+    #Check and handle .zip files
+    if link.path[-3:] == "zip":
+        print("INFO: A .zip file was downloaded from RHDC, contents will be listed and the bps patch will be applied.")
+        try:    
+            with zf.ZipFile(path_folder + link.path) as zip_dl:
+                zip_dl.extractall(path_folder)
+                for file in zip_dl.namelist():
+                    print(file)
+        except Exception as e:
+            print("Error handling .zip file. " + str(e))
+            sys.exit(1)
+        try:
+            for file in zip_dl.namelist():
+                if file[-3:] == "bps":
+                    print("BPS patch is " + file)
+                    print(path_folder + "/" + file)
+                    with open(path_folder + "/" + file, 'rb') as bps_patch: 
+                        print("Opened bps patch")
+                        #bps_path = path_folder + link.path
+                        patch_rom(str(Path(rom).expanduser()), bps_patch.read(), path_folder , link)
+        except Exception as e:
+            print("Error patching file: " + str(e))
+            sys.exit(1)
+    else:
+        try:
+            print("Patching file...")
+            with open(path_folder + link.path, 'rb').read() as bps_patch:
+                patch_rom(str(Path(rom).expanduser()), bps_patch, path_folder, link)
+        except Exception as e:
+            print("Error patching file: " + str(e))
+            sys.exit(1)
 
     print("Done! Patched ROM saved to: " + path_folder + link.path[:-4] + ".z64")
